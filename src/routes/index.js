@@ -99,7 +99,7 @@ router.delete('/deleteBase', async (req, res) => {
         const { movil } = req.query
 
         await Servicios.destroy({
-            where:{
+            where: {
                 movil: movil
             },
             force: true
@@ -130,8 +130,8 @@ router.post('/endShift', async (req, res) => {
 
 router.get('/decode', (req, res) => {
     try {
-        const {token} = req.query
-    res.send(jwt.verify(token,SECRET))
+        const { token } = req.query
+        res.send(jwt.verify(token, SECRET))
     } catch (error) {
         console.log(error.message);
     }
@@ -144,27 +144,28 @@ router.get('/getServOld', async (req, res) => {
         const hora = currentDay.getHours()
         const minutos = currentDay.getMinutes()
         const planillasTurno = await Planillas.findAll()
+
         let planillasDia = []
-        if( hora >= 6 & minutos > 0 & hora < 8 & minutos <= 59 ){
+        if (hora >= 6 & minutos > 0 & hora < 8 & minutos <= 59) {
             planillasDia = []
             const arrSend = []
             for (let i = 0; i <= 3; i++) {
-                arrSend.push(JSON.parse(planillasTurno[i].servicios))
+                planillasTurno[i] && arrSend.push(JSON.parse(planillasTurno[i].servicios))
             }
             res.send(arrSend)
-        }else{
+        } else {
             planillasDia = []
-            planillasTurno.map( e =>{
+            planillasTurno.map(e => {
                 const jsonServ = JSON.parse(e.servicios)
                 let diaServ = 0
                 //De 6-8
                 // Demas turnos
-                if( currentDay.getDate() === jsonServ.date & jsonServ.turno !== "noche"){
+                if (currentDay.getDate() === jsonServ.date & jsonServ.turno !== "noche") {
                     planillasDia.push(jsonServ)
                 }
                 //En turno noche descuendo un dia al actual
-                if ( hora >= 0 & minutos > 0 & hora <= 6 & minutos <= 59 ){
-                    if (currentDay.getDate()-1 === jsonServ.date && jsonServ.turno !== "noche" ) {
+                if (hora >= 0 & minutos > 0 & hora <= 6 & minutos <= 59) {
+                    if (currentDay.getDate() - 1 === jsonServ.date && jsonServ.turno !== "noche") {
                         planillasDia.push(jsonServ)
                     }
                 }
@@ -174,5 +175,30 @@ router.get('/getServOld', async (req, res) => {
     } catch (error) {
         console.log(error.message);
     }
+})
+router.post("/signUp", async (req, res) => {
+    try {
+        const { usuario, password, nombre, apellido, turno } = req.query
+        await Users.findOrCreate({
+            where: {
+                usuario: usuario
+            },
+            defaults: {
+                usuario: usuario,
+                password: password,
+                nombre: nombre,
+                apellido: apellido,
+                turno: turno
+            }
+        })
+        res.send("Creado")
+    } catch (error) {
+        console.log(error.message);        
+    }
+})
+router.get("/testPlan", async (req, res) =>{
+    const planilla = await Planillas.findAll()
+    const json = JSON.parse(JSON.stringify(planilla))
+    res.send(planilla)
 })
 module.exports = router;

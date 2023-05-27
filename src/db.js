@@ -5,13 +5,9 @@ const path = require('path');
 const {
   DB_USER, DB_PASSWORD, DB_HOST,BD_NAME,BD_PORT, dialect
 } = require('./config')
-const sequelize = new Sequelize(BD_NAME,DB_USER, DB_PASSWORD, {
-  host:'localhost',
-  dialect: dialect,
-  logging:true
-});
+const sequelize = new Sequelize(`postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${BD_PORT}/${BD_NAME}?ssl=true`);
 
-console.log(`mysql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${BD_PORT}/${BD_NAME}`);
+console.log(`postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${BD_PORT}/${BD_NAME}`);
 const basename = path.basename(__filename);
 
 sequelize.authenticate()
