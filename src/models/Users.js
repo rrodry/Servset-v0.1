@@ -22,7 +22,10 @@ module.exports = (sequelize) => {
       type: Sequelize.STRING()
     },
     turno:{
-      type: Sequelize.STRING()
+      type: Sequelize.TEXT
+    },
+    isAdmin:{
+      type: Sequelize.BOOLEAN(),
     }
   });
 };

@@ -1,16 +1,13 @@
 require('dotenv').config();
 const { Router } = require('express')
-const axios = require('axios')
 const { Servicios, Users, Planillas } = require('../db');
 const router = Router();
 const { SECRET } = require('../config')
 const { getAccessInfo, putCookie } = require('./middle.js');
 const cookieParser = require('cookie-parser');
-const { ok } = require('assert');
-const { stringify } = require('querystring');
 const jwt = require('jsonwebtoken')
-router.use(cookieParser())
 
+router.use(cookieParser())
 router.get("/login", async (req, res) => {
     const { user, pass } = req.query
     try {
@@ -28,7 +25,6 @@ router.get("/login", async (req, res) => {
         res.status(401).json({ msg: "Usuario no registrado", error: error.message })
     }
 })
-
 router.get("/services", async (req, res) => {
     try {
         const resServ = await Servicios.findAll()
@@ -44,7 +40,6 @@ router.get("/services", async (req, res) => {
         res.status(500)
     }
 })
-
 router.post('/increment', async (req, res) => {
     const { movil, iod } = req.query
     const servOld = await Servicios.findOne({
@@ -69,7 +64,6 @@ router.post('/increment', async (req, res) => {
         })
     }
 })
-
 router.post('/addMovil', async (req, res) => {
 
     try {
@@ -93,7 +87,6 @@ router.post('/addMovil', async (req, res) => {
         res.status(500)
     }
 })
-
 router.delete('/deleteBase', async (req, res) => {
     try {
         const { movil } = req.query
@@ -109,25 +102,37 @@ router.delete('/deleteBase', async (req, res) => {
         res.status(500)
     }
 })
-
 router.post('/endShift', async (req, res) => {
     try {
+        let currentDay = new Date()
+        let hour = currentDay.getHours()
+
         const planilla = req.body
-        const saveJ = JSON.stringify(planilla)
-        const save = Planillas.build({
-            servicios: saveJ,
-            dayTime: planilla.date,
-            turno: planilla.turno,
-            novedades: planilla.novedades
-        })
-        save.save()
-        res.send(planilla)
+        if( hour > 6 && hour < 8){
+            planilla.turno = "mañana2"
+            const saveJ = JSON.stringify(planilla)
+            let save = Planillas.build({
+                servicios: saveJ,
+                dayTime: planilla.date,
+                novedades: planilla.novedades
+            })
+            save.save()
+            res.send(planilla)
+        }else{
+            const saveJ = JSON.stringify(planilla)
+            let save = Planillas.build({
+                servicios: saveJ,
+                dayTime: planilla.date,
+                novedades: planilla.novedades
+            })
+            save.save()
+            res.send(planilla)
+        }
 
     } catch (error) {
         console.log(error.message);
     }
 })
-
 router.get('/decode', (req, res) => {
     try {
         const { token } = req.query
@@ -136,42 +141,35 @@ router.get('/decode', (req, res) => {
         console.log(error.message);
     }
 })
-
 router.get('/getServOld', async (req, res) => {
 
     try {
-        const currentDay = new Date()
+        let currentDay = new Date()
         const hora = currentDay.getHours()
-        const minutos = currentDay.getMinutes()
-        const planillasTurno = await Planillas.findAll()
+ 
+        let diaActual = currentDay.getDate()
+        if(hora > 0 && hora <= 8 ) {
+            currentDay = currentDay.setDate( currentDay.getDate() - 1)
+            currentDay = new Date(currentDay)
+            diaActual = currentDay.getDate()
+        }
+        if(hora > 8 ){
+            diaActual = currentDay.getDate()
+        }
+        const planillasTurno = await Planillas.findAll({
+            where:{
+                dayTime: diaActual
+            }
+        })
 
         let planillasDia = []
-        if (hora >= 6 & minutos > 0 & hora < 8 & minutos <= 59) {
-            planillasDia = []
+             planillasDia = []
             const arrSend = []
             for (let i = 0; i <= 3; i++) {
-                planillasTurno[i] && arrSend.push(JSON.parse(planillasTurno[i].servicios))
-            }
+                planillasTurno[i] && arrSend.push(
+                    JSON.parse(planillasTurno[i].servicios
+                ))}
             res.send(arrSend)
-        } else {
-            planillasDia = []
-            planillasTurno.map(e => {
-                const jsonServ = JSON.parse(e.servicios)
-                let diaServ = 0
-                //De 6-8
-                // Demas turnos
-                if (currentDay.getDate() === jsonServ.date & jsonServ.turno !== "noche") {
-                    planillasDia.push(jsonServ)
-                }
-                //En turno noche descuendo un dia al actual
-                if (hora >= 0 & minutos > 0 & hora <= 6 & minutos <= 59) {
-                    if (currentDay.getDate() - 1 === jsonServ.date && jsonServ.turno !== "noche") {
-                        planillasDia.push(jsonServ)
-                    }
-                }
-            })
-            res.send(planillasDia)
-        }
     } catch (error) {
         console.log(error.message);
     }
@@ -193,12 +191,32 @@ router.post("/signUp", async (req, res) => {
         })
         res.send("Creado")
     } catch (error) {
-        console.log(error.message);        
+        console.log(error.message);
     }
 })
-router.get("/testPlan", async (req, res) =>{
+router.get("/testPlan", async (req, res) => {
     const planilla = await Planillas.findAll()
     const json = JSON.parse(JSON.stringify(planilla))
     res.send(planilla)
 })
+router.post("/resetList", async (req, res) => {
+    try {
+        const basePred = ["Nores", "Escardo", "Troncos", "UTN", "Odontologico", "Hdi Torcuato", "Norlog", "Ricardo Rojas", "Hdi Benavidez", "Dique Lujan", "Rincon", "1R Torcuato", "1R Troncos"]
+        basePred.map(async (e) => {
+            await Servicios.destroy({
+                where:{
+                    movil:e
+                }
+            })
+            await Servicios.create({
+                movil: e,
+                servicios: 0
+            })
+        })
+    } catch (error) {
+        console.log(error.message);
+    }
+})
+
+
 module.exports = router;

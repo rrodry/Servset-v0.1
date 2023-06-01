@@ -9,14 +9,11 @@ module.exports = (sequelize) => {
       autoIncrement: true,
       primaryKey: true
     },
-    name:{
-      type: Sequelize.DATE
-    },
     servicios: {
       type: Sequelize.TEXT
     },
     dayTime: {
-        type: Sequelize.DATE
+        type: Sequelize.INTEGER
     }
   });
 };
