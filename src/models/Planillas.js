@@ -14,6 +14,9 @@ module.exports = (sequelize) => {
     },
     dayTime: {
         type: Sequelize.INTEGER
+    },
+    turno:{
+      type: Sequelize.STRING
     }
   });
 };

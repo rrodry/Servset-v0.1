@@ -106,31 +106,29 @@ router.post('/endShift', async (req, res) => {
     try {
         let currentDay = new Date()
         let hour = currentDay.getHours()
-
-        const planilla = req.body
-        if( hour > 6 && hour < 8){
+        let planilla = req.body
+        if(hour > 6 && hour <= 7 ){
             planilla.turno = "mañana2"
-            const saveJ = JSON.stringify(planilla)
-            let save = Planillas.build({
-                servicios: saveJ,
-                dayTime: planilla.date,
-                novedades: planilla.novedades
-            })
-            save.save()
-            res.send(planilla)
-        }else{
-            const saveJ = JSON.stringify(planilla)
-            let save = Planillas.build({
-                servicios: saveJ,
-                dayTime: planilla.date,
-                novedades: planilla.novedades
-            })
-            save.save()
-            res.send(planilla)
         }
+        const saveJ = JSON.stringify(planilla)
+        console.log(planilla);
+        let  [planillaCreate, created ] = Planillas.findOrCreate({
+            where: {
+                turno: planilla.turno,
+                dayTime: planilla.date
+            },
+            defaults: {
+                servicios: saveJ,
+                dayTime: planilla.date,
+                novedades: planilla.novedades,
+                turno: planilla.turno,
+                
+            }
+        })
+        created ? res.send(planilla) : res.send("ya creado");
 
     } catch (error) {
-        console.log(error.message);
+        res.send(error.message)
     }
 })
 router.get('/decode', (req, res) => {
@@ -146,30 +144,20 @@ router.get('/getServOld', async (req, res) => {
     try {
         let currentDay = new Date()
         const hora = currentDay.getHours()
- 
         let diaActual = currentDay.getDate()
-        if(hora > 0 && hora <= 8 ) {
-            currentDay = currentDay.setDate( currentDay.getDate() - 1)
-            currentDay = new Date(currentDay)
-            diaActual = currentDay.getDate()
+        if( hora >= 0 && hora <= 8){
+            diaActual--
         }
-        if(hora > 8 ){
-            diaActual = currentDay.getDate()
-        }
-        const planillasTurno = await Planillas.findAll({
-            where:{
+        const serv = await Planillas.findAll({
+            where: {
                 dayTime: diaActual
             }
         })
-
-        let planillasDia = []
-             planillasDia = []
-            const arrSend = []
-            for (let i = 0; i <= 3; i++) {
-                planillasTurno[i] && arrSend.push(
-                    JSON.parse(planillasTurno[i].servicios
-                ))}
-            res.send(arrSend)
+        const arrToSend = []
+        serv.map( e => {
+            arrToSend.push(JSON.parse(e.servicios))
+        })
+        res.send(arrToSend)
     } catch (error) {
         console.log(error.message);
     }
