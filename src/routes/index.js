@@ -111,7 +111,6 @@ router.post('/endShift', async (req, res) => {
             planilla.turno = "mañana2"
         }
         const saveJ = JSON.stringify(planilla)
-        console.log(planilla);
         let  [planillaCreate, created ] = Planillas.findOrCreate({
             where: {
                 turno: planilla.turno,
@@ -205,6 +204,18 @@ router.post("/resetList", async (req, res) => {
         console.log(error.message);
     }
 })
-
+router.get("/adminPanelAll", async (req,res) => {
+    const planillas =  await Planillas.findAll()
+    const arr = []
+    planillas.map( (e) => {
+        const serv = JSON.parse(e.servicios)
+        arr.push({
+            servicios: serv.state,
+            dia: e.dayTime,
+            turno: e.turno
+        })
+    })
+    res.send(arr)
+})
 
 module.exports = router;
